@@ -2,19 +2,26 @@ name: Enforce Merge Strategy
 
 on:
   pull_request:
-    types: [opened, labeled, unlabeled, synchronize]
+    types: [opened, labeled, unlabeled, synchronize, ready_for_review]
 
 jobs:
   enforce_merge_commit:
     runs-on: ubuntu-latest
     steps:
-      - name: Check PR Labels
-        id: check_labels
+      - name: Check PR Labels and Merge Method
+        id: check_merge
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const labels = context.payload.pull_request.labels.map(label => label.name);
-            if (!labels.includes('bug')) {
-              core.setFailed('❌ Solo los PRs con la etiqueta "bug" pueden hacer Squash and Merge.');
+            const pr = context.payload.pull_request;
+            const labels = pr.labels.map(label => label.name);
+            
+            const squashAllowed = labels.includes('bug');
+            
+            if (squashAllowed) {
+              console.log("✅ Squash and Merge permitido porque la PR tiene la etiqueta 'bug'.");
+            } else {
+              console.log("❌ Squash and Merge no permitido.");
+              core.setFailed("Esta PR debe fusionarse con 'Merge Commit'.");
             }
